@@ -10,6 +10,9 @@ public class Lexer {
 
   private final Pattern tokenPattern;
 
+  // (?<%s>%s) -> named capturing group.
+  // The former %s is the name of the group
+  // The latter %s is the pattern that the group should capture.
   public Lexer() {
     StringBuilder tokenPatterns = new StringBuilder();
     for (TokenType tokenType : TokenType.values()) {
