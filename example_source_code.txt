@@ -6,4 +6,5 @@ procedure Rectangle {
         f = 8;
         while f {
           o = 8; }}}
-  d = t; }
+  d = t;
+  d = t;}

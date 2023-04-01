@@ -18,7 +18,9 @@ public class Parser {
   }
 
   public ASTNode parse() {
-    return parseProcedure();
+    ASTNode procedureNode = parseProcedure();
+    pkb.computeTransitiveClosures();
+    return procedureNode;
   }
 
   private ProcedureNode parseProcedure() {

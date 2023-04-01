@@ -1,8 +1,12 @@
 import java.util.List;
 
-abstract class ASTNode {}
+abstract class ASTNode {
 
-abstract class ExpressionNode extends ASTNode {}
+}
+
+abstract class ExpressionNode extends ASTNode {
+
+}
 
 abstract class StatementNode extends ASTNode {
 
