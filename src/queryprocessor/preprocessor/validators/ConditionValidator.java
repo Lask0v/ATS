@@ -15,9 +15,9 @@ public class ConditionValidator implements Validator
     public boolean isValid() {
         if(condition instanceof ConditionRefValue)
         {
-            var c = (ConditionRefValue) condition;
-            var attr = c.getAttrRef().getAttr();
-            var attrValue = c.getAttrValue();
+            ConditionRefValue c = (ConditionRefValue) condition;
+            AttrName attr = c.getAttrRef().getAttr();
+            AttrValue attrValue = c.getAttrValue();
 
             if(attr.equals(AttrName.value) || attr.equals(AttrName.stmtNo)) {
                 if (attrValue.getValueType() != AttrValue.ValueType.NUMBER) {
@@ -33,10 +33,10 @@ public class ConditionValidator implements Validator
             }
         }
         else if(condition instanceof ConditionRefRef) {
-            var c = (ConditionRefRef) condition;
-            var pair = c.getAttrRefs();
-            var ref1 = pair.getFirst();
-            var ref2 = pair.getSecond();
+            ConditionRefRef c = (ConditionRefRef) condition;
+            utils.Pair<AttrRef, AttrRef> pair = c.getAttrRefs();
+            AttrRef ref1 = pair.getFirst();
+            AttrRef ref2 = pair.getSecond();
 
             if(ref1.getAttr() != ref2.getAttr()) {
                 if(((ref1.getAttr() == AttrName.procName || ref1.getAttr() == AttrName.varName) && (ref2.getAttr() == AttrName.stmtNo || ref2.getAttr() == AttrName.value)) ||

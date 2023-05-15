@@ -17,7 +17,7 @@ public class IsAnyValidator implements Validator
 
     @Override
     public boolean isValid() {
-        for (var validator: validatorsChain)
+        for (Validator validator: validatorsChain)
             if(validator.isValid())
                 return true;
             else

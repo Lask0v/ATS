@@ -6,6 +6,7 @@ import utils.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -18,9 +19,9 @@ public abstract class Extractor
     }
 
     protected List<Pair<Integer, Integer>> extractRegions(String query, Keyword searchedClause) {
-        var regions = new ArrayList<Pair<Integer, Integer>>();
+        ArrayList<Pair<Integer, Integer>> regions = new ArrayList<Pair<Integer, Integer>>();
 
-        var clauseMatcher = Pattern.compile(searchedClause.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(query);
+        Matcher clauseMatcher = Pattern.compile(searchedClause.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(query);
         var clasues = clauseMatcher.results().collect(Collectors.toList());
 
         for (var clause: clasues) {
@@ -48,7 +49,7 @@ public abstract class Extractor
     }
 
     protected long getConcatenatorCount(String line, int start, int end) {
-        var matcher = Pattern.compile(Keyword.AND.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(line).region(start, end);
+        Matcher matcher = Pattern.compile(Keyword.AND.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(line).region(start, end);
         var results = matcher.results().collect(Collectors.toList());
 
         if (!results.isEmpty())

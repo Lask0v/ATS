@@ -44,18 +44,18 @@ public class QueryEvaluatorBase implements QueryEvaluator
     @Override
     public EvaluationResult evaluate(QueryTree queryTree)
     {
-        var resultNodes = new ArrayList<ResNode>();
+        List<ResNode> resultNodes = new ArrayList<ResNode>();
 
         if(queryTree == null)
             return null;
 
-        var rNode = queryTree.getResultsNode().getFirstChild();
+        QTNode rNode = queryTree.getResultsNode().getFirstChild();
 
         // LinkedHashMap
         // in addition to the uniqueness of elements, the order of elements in which they were added is also guaranteed
         // important, the rest of the function relies on this order
-        var resultLUT = new LinkedHashMap<Synonym<?>, Set<ASTNode>>();
-        var resultExtractors = new LinkedHashMap<Synonym<?>, Function<ASTNode, String>>();
+        Map<Synonym<?>, Set<ASTNode>> resultLUT = new LinkedHashMap<Synonym<?>, Set<ASTNode>>();
+        Map<Synonym<?>, Function<ASTNode, String>> resultExtractors = new LinkedHashMap<Synonym<?>, Function<ASTNode, String>>();
 
         while(rNode != null)
         {
@@ -65,17 +65,17 @@ public class QueryEvaluatorBase implements QueryEvaluator
             rNode = rNode.getRightSibling();
         }
 
-        for (var resNode: resultNodes) {
-            var s = resNode.getSynonym();
+        for (ResNode resNode: resultNodes) {
+            Synonym<?> s = resNode.getSynonym();
             resultLUT.computeIfAbsent(s, l -> this.getMatchingNodes(pkb.getAST(), s));
             resultExtractors.computeIfAbsent(s, e -> resNode.getExtractor());
         }
 
-        var refRefConditions = new HashMap<Pair<Synonym<?>, Synonym<?>>, LinkedHashSet<Pair<ASTNode, ASTNode>>>();
+        Map<Pair<Synonym<?>, Synonym<?>>, LinkedHashSet<Pair<ASTNode, ASTNode>>> refRefConditions = new HashMap<Pair<Synonym<?>, Synonym<?>>, LinkedHashSet<Pair<ASTNode, ASTNode>>>();
         if(queryTree.getWithNode() != null)
         {
-            var conditionsPair = new ArrayList<Pair<Condition, Boolean>>();
-            var condNode = (Condition) queryTree.getWithNode().getFirstChild();
+            List<Pair<Condition, Boolean>> conditionsPair = new ArrayList<Pair<Condition, Boolean>>();
+            Condition condNode = (Condition) queryTree.getWithNode().getFirstChild();
 
             while (condNode != null) {
                 if(condNode instanceof ConditionRefRef)
@@ -86,33 +86,33 @@ public class QueryEvaluatorBase implements QueryEvaluator
                 condNode = (Condition) condNode.getRightSibling();
             }
 
-            var doubleRefConditions = conditionsPair.stream().filter(Pair::getSecond).map(p -> (ConditionRefRef) p.getFirst()).collect(Collectors.toList());
-            var refValueConditions = conditionsPair.stream().filter(p -> !p.getSecond()).map(p -> (ConditionRefValue) p.getFirst()).collect(Collectors.toList());
+            List<ConditionRefRef> doubleRefConditions = conditionsPair.stream().filter(Pair::getSecond).map(p -> (ConditionRefRef) p.getFirst()).collect(Collectors.toList());
+            List<ConditionRefValue> refValueConditions = conditionsPair.stream().filter(p -> !p.getSecond()).map(p -> (ConditionRefValue) p.getFirst()).collect(Collectors.toList());
 
-            for (var condition: refValueConditions) {
-                var wResults = resultLUT.computeIfAbsent(condition.getAttrRef().getSynonym(),
+            for (ConditionRefValue condition: refValueConditions) {
+                Set<ASTNode> wResults = resultLUT.computeIfAbsent(condition.getAttrRef().getSynonym(),
                         l -> getMatchingNodes(pkb.getAST(), condition.getAttrRef().getSynonym()));
 
-                var cResult = wResults.stream()
+                List<ASTNode> cResult = wResults.stream()
                         .filter(condition::attrCompare)
                         .collect(Collectors.toList());
 
                 resultLUT.put(condition.getAttrRef().getSynonym(), new HashSet<>(cResult));
             }
 
-            for (var condition: doubleRefConditions) {
-                var pair = condition.getAttrRefs();
-                var ref1 = pair.getFirst();
-                var ref2 = pair.getSecond();
+            for (ConditionRefRef condition: doubleRefConditions) {
+                Pair<AttrRef, AttrRef> pair = condition.getAttrRefs();
+                AttrRef ref1 = pair.getFirst();
+                AttrRef ref2 = pair.getSecond();
 
-                var ref1Nodes = resultLUT.computeIfAbsent(ref1.getSynonym(), l -> getMatchingNodes(pkb.getAST(), ref1.getSynonym()));
-                var ref2Nodes = resultLUT.computeIfAbsent(ref2.getSynonym(), l -> getMatchingNodes(pkb.getAST(), ref2.getSynonym()));
+                Set<ASTNode> ref1Nodes = resultLUT.computeIfAbsent(ref1.getSynonym(), l -> getMatchingNodes(pkb.getAST(), ref1.getSynonym()));
+                Set<ASTNode> ref2Nodes = resultLUT.computeIfAbsent(ref2.getSynonym(), l -> getMatchingNodes(pkb.getAST(), ref2.getSynonym()));
 
                 Set<ASTNode> filteredRefs1 = new HashSet<>();
                 Set<ASTNode> filteredRefs2 = new HashSet<>();
-                for (var ref1Node: ref1Nodes) {
-                    for (var ref2Node: ref2Nodes) {
-                        var refPair = new Pair<>(ref1Node, ref2Node);
+                for (ASTNode ref1Node: ref1Nodes) {
+                    for (ASTNode ref2Node: ref2Nodes) {
+                        Pair<ASTNode, ASTNode> refPair = new Pair<>(ref1Node, ref2Node);
                         if(condition.attrCompare(refPair)) {
                             filteredRefs1.add(ref1Node);
                             filteredRefs2.add(ref2Node);
@@ -126,7 +126,7 @@ public class QueryEvaluatorBase implements QueryEvaluator
             }
         }
 
-        var patterns = new ArrayList<ExpressionPattern>();
+        List<ExpressionPattern> patterns = new ArrayList<ExpressionPattern>();
         if(queryTree.getPatternNode() != null){
             ExpressionPattern node = (ExpressionPattern) queryTree.getPatternNode().getFirstChild();
 
@@ -135,11 +135,11 @@ public class QueryEvaluatorBase implements QueryEvaluator
                 node = (ExpressionPattern) node.getRightSibling();
             }
 
-            for (var pattern: patterns) {
-                var statements = resultLUT.computeIfAbsent(pattern.getSynonym(), l -> getMatchingNodes(pkb.getAST(), pattern.getSynonym()));
-                var result = new HashSet<ASTNode>();
+            for (ExpressionPattern pattern: patterns) {
+                Set<ASTNode> statements = resultLUT.computeIfAbsent(pattern.getSynonym(), l -> getMatchingNodes(pkb.getAST(), pattern.getSynonym()));
+                Set<ASTNode> result = new HashSet<ASTNode>();
 
-                for (var stmt: statements) {
+                for (ASTNode stmt: statements) {
                     if(pattern.matchesPattern(stmt))
                         result.add(stmt);
                 }
@@ -152,8 +152,8 @@ public class QueryEvaluatorBase implements QueryEvaluator
         Map<Pair<Synonym<?>, Synonym<?>>, LinkedHashSet<Pair<ASTNode, ASTNode>>> pairsInRelationshipMap = new HashMap<>();
         if(queryTree.getSuchThatNode() != null)
         {
-            var relNode = queryTree.getSuchThatNode().getFirstChild();
-            var relationships = new ArrayList<RelationshipRef>();
+            QTNode relNode = queryTree.getSuchThatNode().getFirstChild();
+            ArrayList<RelationshipRef> relationships = new ArrayList<RelationshipRef>();
 
             while (relNode != null) {
                 if(relNode instanceof RelationshipRef)
@@ -170,46 +170,46 @@ public class QueryEvaluatorBase implements QueryEvaluator
 
             // Dla każdej relacji załaduj do Look Up Table (LUT) opowiadające typy węzłów.
             // Każdy synonim zawiera w sobie opowiadający mu typ węzła drzewa AST oraz posiada komparator
-            for (var relRef: relationships) {
+            for (RelationshipRef relRef: relationships) {
                 for (int i = 0; i < relRef.getArgSize(); i++) {
-                    var arg = relRef.getArg(i);
+                    ArgNode arg = relRef.getArg(i);
                     resultLUT.computeIfAbsent(arg.getSynonym(), l -> getMatchingNodes(pkb.getAST(), arg.getSynonym()));
                 }
 
                 // Ekstrakcja argumentów relacji
                 // Każda z relacji ma zawsze 2 parametry, raczej nigdy się to nie zmieni
-                var arg1 = relRef.getArg(0);
-                var arg2 = relRef.getArg(1);
+                ArgNode arg1 = relRef.getArg(0);
+                ArgNode arg2 = relRef.getArg(1);
 
                 // evalAlgoritms zawiera mape algorytmów ewaluacyjnych w formie <K, V>
                 // gdzie K to synonim, a V to 'instance method reference'
                 // rezultatem jest lista par węzłów między którymi zachodzi dana relacja
-                var results = new ArrayList<>(evalAlgorithms.get(relRef.getRelationshipType()).apply(
+                ArrayList<Pair<ASTNode, ASTNode>> results = new ArrayList<>(evalAlgorithms.get(relRef.getRelationshipType()).apply(
                         resultLUT.get(arg1.getSynonym()),
                         resultLUT.get(arg2.getSynonym())
                 ));
 
-                var firstSet = new HashSet<ASTNode>();
-                var secondSet = new HashSet<ASTNode>();
+                HashSet<ASTNode> firstSet = new HashSet<ASTNode>();
+                HashSet<ASTNode> secondSet = new HashSet<ASTNode>();
                 boolean anyMatch = false;
-                for (var resultPair: results) {
-                    var firstNode = resultPair.getFirst(); // Lista węzłów dla argumentu 1 danej relacji
-                    var secondNode = resultPair.getSecond(); // Lista węzłów dla argumentu 2 danej relacji
-                    var firstSynonym = arg1.getSynonym();
+                for (Pair<ASTNode, ASTNode> resultPair: results) {
+                    ASTNode firstNode = resultPair.getFirst(); // Lista węzłów dla argumentu 1 danej relacji
+                    ASTNode secondNode = resultPair.getSecond(); // Lista węzłów dla argumentu 2 danej relacji
+                    Synonym<?> firstSynonym = arg1.getSynonym();
 
                     // sprawdź czy dany węzeł istnieje w LUT
                     // jeśli węzęł nie zawiera się w zestawie to znaczy, że dany wynik nie spełnia innych relacji
                     // innymi słowy, taki wynik nie należy do zbioru wspólnego (część wspólna) relacji
                     // wynik należy odrzucić
                     if(resultLUT.get(firstSynonym).stream().anyMatch(x -> x == firstNode)) {
-                        var secondSynonym = arg2.getSynonym();
+                        Synonym<?> secondSynonym = arg2.getSynonym();
 
                         // analogicznie
                         // sprawdzenie - tym razem dla węzła pochodzącego z drugiego argumentu
                         if(resultLUT.get(secondSynonym).stream().anyMatch(x -> x == secondNode)) {
                             // jesli oba węzły należą do zbioru
                             // nalezy dodać taki wynik do listy par relacji
-                            var set = pairsInRelationshipMap.computeIfAbsent(new Pair<>(firstSynonym, secondSynonym), l -> new LinkedHashSet<>());
+                            LinkedHashSet<Pair<ASTNode, ASTNode>> set = pairsInRelationshipMap.computeIfAbsent(new Pair<>(firstSynonym, secondSynonym), l -> new LinkedHashSet<>());
                             set.add(resultPair);
                             firstSet.add(firstNode);
                             secondSet.add(secondNode);
@@ -235,11 +235,11 @@ public class QueryEvaluatorBase implements QueryEvaluator
             // Zaktualizuj mape relacji
             // Wyeliminuj stare relacje które zachodziły na początku, a potem zostały wyeliminowane przez dalsze relacji
             // i ich wynik nie należy do części wspólnej
-            for (var entry: pairsInRelationshipMap.entrySet()) {
-                var keyPair = entry.getKey();
-                var pairSet = entry.getValue();
+            for (Map.Entry<Pair<Synonym<?>, Synonym<?>>, LinkedHashSet<Pair<ASTNode, ASTNode>>> entry: pairsInRelationshipMap.entrySet()) {
+                Pair<Synonym<?>, Synonym<?>> keyPair = entry.getKey();
+                LinkedHashSet<Pair<ASTNode, ASTNode>> pairSet = entry.getValue();
 
-                var filteredSet = pairSet
+                LinkedHashSet<Pair<ASTNode, ASTNode>> filteredSet = pairSet
                         .stream()
                         .filter(p ->
                                 resultLUT.get(keyPair.getFirst()).contains(p.getFirst())
@@ -253,9 +253,9 @@ public class QueryEvaluatorBase implements QueryEvaluator
             // Stworz rezultaty cząstkowe dla wyników relacji
             // PartialRezult moze zawierać jeden klucz prosty lub pare kluczy
             // tutaj parą kluczy są synonimy relacji, a zestawem argumenty dla których zachodzi dana relacja
-            for (var entry: pairsInRelationshipMap.entrySet()) {
-                var keyPair = entry.getKey();
-                var valueList = entry.getValue();
+            for (Map.Entry<Pair<Synonym<?>, Synonym<?>>, LinkedHashSet<Pair<ASTNode, ASTNode>>> entry: pairsInRelationshipMap.entrySet()) {
+                Pair<Synonym<?>, Synonym<?>> keyPair = entry.getKey();
+                LinkedHashSet<Pair<ASTNode, ASTNode>> valueList = entry.getValue();
 
                 PartialResult pr = new PartialResult(keyPair, valueList);
                 partialResults.add(pr);
@@ -265,9 +265,9 @@ public class QueryEvaluatorBase implements QueryEvaluator
         // Stworz rezultaty cząstkowe dla wyników warunków gdzie występuje porównanie pomiędzy dwoma referencjami synonimu
         // Klucz podwójnu - <Synonim pierwszej referencji, Synonim drugiej referencji>
         // Zestaw zawiera pary dla których spełniony jest warunek (przykład: x1.procName = y2.procName);
-        for (var entry: refRefConditions.entrySet()) {
-            var keyPair = entry.getKey();
-            var valueSet = entry.getValue();
+        for (Map.Entry<Pair<Synonym<?>, Synonym<?>>, LinkedHashSet<Pair<ASTNode, ASTNode>>> entry: refRefConditions.entrySet()) {
+            Pair<Synonym<?>, Synonym<?>> keyPair = entry.getKey();
+            LinkedHashSet<Pair<ASTNode, ASTNode>> valueSet = entry.getValue();
 
             PartialResult pr = new PartialResult(keyPair, valueSet);
             partialResults.add(pr);
@@ -277,10 +277,10 @@ public class QueryEvaluatorBase implements QueryEvaluator
         // klucz pojedyczny - Synonim
         // zestaw zawiera listę argumentów (węzłów) dla danego synonimu, który spełnia warunki o ile jakieś zostały zdefiniowane
         // w przeciwnym razie zawiera wszystkie odpowiadające mu typem argumenty (węzły)
-        for (var entry: resultLUT.entrySet()) {
-            var contains = false;
+        for (Map.Entry<Synonym<?>, Set<ASTNode>> entry: resultLUT.entrySet()) {
+            boolean contains = false;
 
-            for (var pr: partialResults) {
+            for (PartialResult pr: partialResults) {
                 if(pr.containsKey(entry.getKey())) {
                     contains = true;
                     break;
@@ -295,7 +295,7 @@ public class QueryEvaluatorBase implements QueryEvaluator
     }
 
     private Set<ASTNode> getMatchingNodes(ASTNode head, Synonym<?> s) {
-        var result = new ArrayList<ASTNode>();
+        ArrayList<ASTNode> result = new ArrayList<ASTNode>();
         ASTNode node = head;
 
         Stack<ASTNode> nodeStack = new Stack<>();

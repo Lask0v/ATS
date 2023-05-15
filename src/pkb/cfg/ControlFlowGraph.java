@@ -20,7 +20,7 @@ public class ControlFlowGraph
 
     public static ControlFlowGraph build(ProcedureNode procedureNode)
     {
-        var cfg = new CfgNode();
+        CfgNode cfg = new CfgNode();
         generateCfg(procedureNode.getFirstChild(), cfg);
 
         return new ControlFlowGraph(cfg);
@@ -28,10 +28,10 @@ public class ControlFlowGraph
 
     public List<List<CfgNode>> getFlowPaths(ASTNode from, ASTNode to)
     {
-        var nodeFrom = seekNode(from);
-        var nodeTo = seekNode(to);
+        Optional<CfgNode> nodeFrom = seekNode(from);
+        Optional<CfgNode> nodeTo = seekNode(to);
 
-        if(nodeFrom.isEmpty() || nodeTo.isEmpty())
+        if(!nodeFrom.isPresent() || !nodeTo.isPresent())
             return Collections.emptyList();
 
         /*
@@ -52,9 +52,9 @@ public class ControlFlowGraph
             return Collections.emptyList();
          */
 
-        var currentPath = new ArrayList<CfgNode>();
-        var flowPaths = new ArrayList<List<CfgNode>>();
-        var visited = new HashSet<CfgNode>();
+        ArrayList<CfgNode> currentPath = new ArrayList<CfgNode>();
+        ArrayList<List<CfgNode>> flowPaths = new ArrayList<List<CfgNode>>();
+        HashSet<CfgNode> visited = new HashSet<CfgNode>();
 
         DFS(nodeFrom.get(),
                 nodeTo.get(),
@@ -103,10 +103,10 @@ public class ControlFlowGraph
     }
 
     public Pair<CfgNode, CfgNode> getBranching(ASTNode astNode) {
-        var cfgNode = seekNode(astNode);
+        Optional<CfgNode> cfgNode = seekNode(astNode);
 
         if(cfgNode.isPresent()) {
-            var node = cfgNode.get();
+            CfgNode node = cfgNode.get();
             return new Pair<>(node.getLeft(), node.getRight());
         }
 
@@ -119,7 +119,7 @@ public class ControlFlowGraph
 
         Set<CfgNode> visited = new HashSet<>();
         while (!cfgStack.isEmpty()) {
-            var node = cfgStack.pop();
+            CfgNode node = cfgStack.pop();
 
             if(node == null)
                 continue;
@@ -141,15 +141,15 @@ public class ControlFlowGraph
     private static CfgNode generateCfg(ASTNode head, CfgNode cfgHead)
     {
         CfgNode lastCfgNode = cfgHead;
-        var aNode = head;
+        ASTNode aNode = head;
 
         while(aNode != null)
         {
             if (aNode instanceof WhileNode) {
-                var whileNode = new CfgNode();
+                CfgNode whileNode = new CfgNode();
                 lastCfgNode.setLeft(whileNode);
                 whileNode.setAstNode(aNode);
-                var stmtList = aNode.getFirstChild().getRightSibling(); // WhileNode
+                ASTNode stmtList = aNode.getFirstChild().getRightSibling(); // WhileNode
                                                                         //      |
                                                                         //   condition ——> stmtList
                 whileNode.setLeft(new CfgNode());
@@ -161,33 +161,33 @@ public class ControlFlowGraph
                 lastCfgNode = whileNode.getRight();
             }
             else if(aNode instanceof IfNode) {
-                var then = aNode.getFirstChild().getRightSibling(); //   if
-                var elsee = then.getRightSibling();             //    /  |  \
+                ASTNode then = aNode.getFirstChild().getRightSibling(); //   if
+                ASTNode elsee = then.getRightSibling();             //    /  |  \
                                                                 //  var  then  else
-                var ifNode = new CfgNode();
+                CfgNode ifNode = new CfgNode();
                 ifNode.setAstNode(aNode);
                 lastCfgNode.setLeft(ifNode);
 
-                var thenNode = new CfgNode();
+                CfgNode thenNode = new CfgNode();
                 thenNode.setAstNode(then.getFirstChild());
                 ifNode.setLeft(thenNode);
-                var lastThenStmt = generateCfg(then.getFirstChild(), thenNode);
+                CfgNode lastThenStmt = generateCfg(then.getFirstChild(), thenNode);
 
-                var endIfNode = new EndIfNode();
+                EndIfNode endIfNode = new EndIfNode();
                 lastThenStmt.setRight(endIfNode);
 
                 if(elsee != null) {
-                    var elseNode = new CfgNode();
+                    CfgNode elseNode = new CfgNode();
                     elseNode.setAstNode(elsee.getFirstChild());
                     ifNode.setRight(elseNode);
-                    var lastElseStmt = generateCfg(elsee.getFirstChild(), elseNode);
+                    CfgNode lastElseStmt = generateCfg(elsee.getFirstChild(), elseNode);
                     lastElseStmt.setLeft(endIfNode);
                 }
 
                 lastCfgNode = endIfNode;
             }
             else if(aNode instanceof StatementNode) {
-                var cfg = new CfgNode();
+                CfgNode cfg = new CfgNode();
                 lastCfgNode.setLeft(cfg);
                 cfg.setAstNode(aNode);
                 lastCfgNode = cfg;

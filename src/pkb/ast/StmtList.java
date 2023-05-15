@@ -9,10 +9,10 @@ public class StmtList extends ASTNode {
     public StmtList(ASTNode Parent, List<StatementNode> stmtList) {
         this.setParent(Parent);
 
-        var last = stmtList.stream().findFirst().orElse(null);
+        StatementNode last = stmtList.stream().findFirst().orElse(null);
         this.setFirstChild(last);
 
-        for (var stmt : stmtList) {
+        for (StatementNode stmt : stmtList) {
             stmt.setParent(Parent);
 
             if (last != null)

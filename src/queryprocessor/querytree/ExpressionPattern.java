@@ -44,7 +44,7 @@ public class ExpressionPattern extends QTNode
 
             // While & If node cannot have a body
             // Placeholder fits anything e.g. while(_,_), if(_,_)
-            return subExpressionTree.isEmpty(); // empty exp tree means the pattern is correct since those nodes cannot have a body
+            return !subExpressionTree.isPresent(); // empty exp tree means the pattern is correct since those nodes cannot have a body
         }
 
         if(node instanceof AssignmentNode) {
@@ -54,23 +54,23 @@ public class ExpressionPattern extends QTNode
             if(node.getFirstChild() == null)
                 return false;
 
-            if(subExpressionTree.isEmpty())
+            if(!subExpressionTree.isPresent())
                 return true;
 
-            var steps = 0;
-            var expressionNode = node.getFirstChild().getRightSibling();
+            int steps = 0;
+            ASTNode expressionNode = node.getFirstChild().getRightSibling();
             while(expressionNode != null)
             {
                 if(!lookBehind && steps > 1)
                     return false;
 
-                var depth = new Depth();
+                Depth depth = new Depth();
                 if(compareTrees(subExpressionTree.get(), expressionNode, depth, lookAhead)) {
                     if(lookAhead)
                         return true;
 
-                    var lastNode = expressionNode;
-                    var i = depth.level;
+                    ASTNode lastNode = expressionNode;
+                    Integer i = depth.level;
                     while(lastNode != null && i > 0) {
                         i--;
                         //lastNode = lastNode.getRightSibling();
@@ -116,7 +116,7 @@ public class ExpressionPattern extends QTNode
     }
 
     private boolean matchesVariable(ASTNode node) {
-        var leftHandVar = node.getFirstChild();
+        ASTNode leftHandVar = node.getFirstChild();
 
         if(leftHandVar == null)
             return false;

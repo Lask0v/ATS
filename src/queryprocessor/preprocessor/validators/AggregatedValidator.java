@@ -15,7 +15,7 @@ public class AggregatedValidator implements Validator
   @Override
   public boolean isValid()
   {
-    for (var validator: validatorsChain) {
+    for (Validator validator: validatorsChain) {
       if (!validator.isValid()) {
         lastErrorMsg = validator.getErrorMsg();
         return false;

@@ -11,13 +11,13 @@ public class IsContainerStatement implements Validator
     private final IsAnyValidator isAnyValidator;
 
     public IsContainerStatement(ArgNode arg) {
-        var containerType = "Container-type Statement";
-        var list = new ArrayList<Validator>(List.of(
-                new ArgTypeValidator(arg, Keyword.STATEMENT, containerType),
-                new ArgTypeValidator(arg, Keyword.WHILE, containerType),
-                new ArgTypeValidator(arg, Keyword.IF, containerType),
-                new ArgTypeValidator(arg, Keyword.PROCEDURE, containerType)
-        ));
+        String containerType = "Container-type Statement";
+        ArrayList<Validator> list = new ArrayList<Validator>(){{
+            add(new ArgTypeValidator(arg, Keyword.STATEMENT, containerType));
+            add(new ArgTypeValidator(arg, Keyword.WHILE, containerType));
+            add(new ArgTypeValidator(arg, Keyword.IF, containerType));
+            add(new ArgTypeValidator(arg, Keyword.PROCEDURE, containerType));
+        }};
         isAnyValidator = new IsAnyValidator(list);
     }
 

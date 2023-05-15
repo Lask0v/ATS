@@ -143,8 +143,8 @@ public class ProgramKnowledgeBase implements ProgramKnowledgeBaseAPI {
         if(ast == null)
             return;
 
-        var procNode = ast.getFirstChild();
-        var procedures = new ArrayList<ProcedureNode>();
+        ASTNode procNode = ast.getFirstChild();
+        ArrayList<ProcedureNode> procedures = new ArrayList<ProcedureNode>();
         while(procNode != null) {
             if(procNode instanceof ProcedureNode) {
                 procedures.add((ProcedureNode) procNode);
@@ -152,7 +152,7 @@ public class ProgramKnowledgeBase implements ProgramKnowledgeBaseAPI {
             }
         }
 
-        for (var procedure: procedures)
+        for (ProcedureNode procedure: procedures)
             this.addControlFlowGraph(procedure, ControlFlowGraph.build(procedure));
     }
 }

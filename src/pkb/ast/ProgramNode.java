@@ -12,7 +12,7 @@ public class ProgramNode extends ASTNode {
 
     ASTNode last = null;
     this.setFirstChild(procedures.get(0));
-    for (var p: procedures) {
+    for (ProcedureNode p: procedures) {
       p.setParent(this);
 
       if(last!= null)

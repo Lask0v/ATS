@@ -76,7 +76,7 @@ public abstract class PartialResultAbstract<KT, VT, V extends Set<?>, T extends 
 
         final int finalKeyNo = keyNo;
         try {
-            var valRef = (Set<Pair<VT, VT>>) value;
+            Set<Pair<VT, VT>> valRef = (Set<Pair<VT, VT>>) value;
             return valRef.stream().map(p -> finalKeyNo == 1 ? p.getFirst() : p.getSecond()).collect(Collectors.toList());
         }
         catch (ClassCastException e) {

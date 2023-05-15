@@ -66,7 +66,7 @@ public class QTree implements QueryTree
             parent.setFirstChild(node);
         else
         {
-            var rNode = parent.getFirstChild();
+            QTNode rNode = parent.getFirstChild();
             while (rNode.getRightSibling() != null)
                 rNode = rNode.getRightSibling();
 

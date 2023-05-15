@@ -25,7 +25,7 @@ public abstract class ContainerNode extends StatementNode {
 
   protected void setParentAndSibling(List<StatementNode> statements) {
     ASTNode last = null;
-    for (var s: statements) {
+    for (StatementNode s: statements) {
       s.setParent(this);
 
       if(last!= null)

@@ -42,7 +42,7 @@ public class ProcedureNode extends ASTNode {
   private void setParentAndSibling() {
     ASTNode last = null;
     this.setFirstChild(statements.get(0));
-    for (var s: statements) {
+    for (StatementNode s: statements) {
       s.setParent(this);
 
       if(last!= null)

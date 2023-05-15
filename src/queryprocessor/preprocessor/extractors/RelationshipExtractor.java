@@ -13,6 +13,7 @@ import queryprocessor.querytree.RelationshipRef;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -27,14 +28,14 @@ public class RelationshipExtractor extends Extractor {
     }
 
     public List<RelationshipRef> extractRelationships(String query) throws InvalidQueryException, MissingArgumentException {
-        var relationships = new ArrayList<RelationshipRef>();
+        ArrayList<RelationshipRef> relationships = new ArrayList<RelationshipRef>();
 
-        var regions = extractRegions(query, Keyword.SUCH_THAT);
-        for (var region: regions)
+        List<utils.Pair<Integer, Integer>> regions = extractRegions(query, Keyword.SUCH_THAT);
+        for (utils.Pair<Integer, Integer> region: regions)
         {
-            var relationshipCount = 0;
+            int relationshipCount = 0;
             for (Keyword rel : QueryPreprocessorBase.relationshipsKeywords) {
-                var relMatcher = Pattern.compile(rel.getRegExpr(), Pattern.CASE_INSENSITIVE)
+                Matcher relMatcher = Pattern.compile(rel.getRegExpr(), Pattern.CASE_INSENSITIVE)
                         .matcher(query)
                         .region(region.getFirst(), region.getSecond());
                 var matchResults = relMatcher.results().collect(Collectors.toList());
@@ -58,22 +59,22 @@ public class RelationshipExtractor extends Extractor {
     }
 
     public List<Synonym<?>> extractArguments(String query, Keyword relType, int start, int end) throws MissingArgumentException, InvalidQueryException {
-        var argsMatcher = Pattern.compile(Keyword.REL_ARGS.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(query).region(start, end);
+        Matcher argsMatcher = Pattern.compile(Keyword.REL_ARGS.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(query).region(start, end);
 
         if (!argsMatcher.find())
             throw new MissingArgumentException(relType.getName(), 0, query);
 
-        var args = argsMatcher.group().split(",");
+        String[] args = argsMatcher.group().split(",");
 
-        var arguments = new ArrayList<Synonym<?>>();
-        var argN = 0;
-        for (var arg : args) {
+        ArrayList<Synonym<?>> arguments = new ArrayList<Synonym<?>>();
+        int argN = 0;
+        for (String arg : args) {
             argN++;
             arg = arg.trim();
 
             Synonym<?> synonym;
             if (arg.contains("\"") || arg.equals(Keyword.PLACEHOLDER.getRegExpr())) {
-                var td = new ArgumentTypeDeducer();
+                ArgumentTypeDeducer td = new ArgumentTypeDeducer();
                 arg = arg.replaceAll("\"", "").trim();
                 synonym = td.deduce(relType, arg, argN);
             } else if (isNumeric(arg))

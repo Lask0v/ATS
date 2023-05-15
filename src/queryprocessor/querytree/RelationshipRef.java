@@ -20,11 +20,11 @@ public class RelationshipRef extends QTNode
         this.relType = relType;
         this.args = new ArrayList<>();
 
-        var prioritizedSynonyms = 0;
+        int prioritizedSynonyms = 0;
         for (int i = 0; i < argsSynonyms.size(); i++)
         {
-            var synonym = argsSynonyms.get(i);
-            var arg = new ArgNode(synonym, i+1);
+            Synonym<?> synonym = argsSynonyms.get(i);
+            ArgNode arg = new ArgNode(synonym, i+1);
 
             if(synonym instanceof NamedSynonym || synonym instanceof StatementIdSynonym)
                 prioritizedSynonyms++;

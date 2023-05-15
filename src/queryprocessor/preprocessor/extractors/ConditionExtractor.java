@@ -11,6 +11,7 @@ import utils.Pair;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -25,11 +26,11 @@ public class ConditionExtractor extends Extractor {
     }
 
     public List<Condition> extractConditions(String query) throws InvalidQueryException {
-        var conditions = new ArrayList<Condition>();
+        ArrayList<Condition> conditions = new ArrayList<Condition>();
 
-        var regions = extractRegions(query, Keyword.WITH);
-        for (var region: regions) {
-            var matcher = Pattern.compile(Keyword.WITH_CLAUSE.getRegExpr(), Pattern.CASE_INSENSITIVE)
+        List<Pair<Integer, Integer>> regions = extractRegions(query, Keyword.WITH);
+        for (Pair<Integer, Integer> region: regions) {
+            Matcher matcher = Pattern.compile(Keyword.WITH_CLAUSE.getRegExpr(), Pattern.CASE_INSENSITIVE)
                     .matcher(query)
                     .region(region.getFirst(), region.getSecond());
             var matchResults = matcher.results().collect(Collectors.toList());
@@ -48,8 +49,8 @@ public class ConditionExtractor extends Extractor {
     }
 
     public List<Condition> extractAttributes(String group) throws InvalidQueryException {
-        var conditionPart = Arrays.stream(group.split("=")).map(String::trim).collect(Collectors.toList());
-        var part0 = conditionPart.get(0);
+        List<String> conditionPart = Arrays.stream(group.split("=")).map(String::trim).collect(Collectors.toList());
+        String part0 = conditionPart.get(0);
         part0 = ' ' + part0;
         part0 = part0.replaceAll(String.format("%s|%s", Keyword.WITH.getRegExpr(), Keyword.AND.getRegExpr()), "");
         conditionPart.set(0, part0.trim());
@@ -57,14 +58,14 @@ public class ConditionExtractor extends Extractor {
         List<Condition> conditionNodes = new ArrayList<>();
         List<Pair<Synonym<?>, AttrName>> refs = new ArrayList<>();
 
-        for (var c : conditionPart) {
+        for (String c : conditionPart) {
             if (!c.contains("."))
                 continue;
 
-            var attrs = Arrays.stream(c.split("\\.")).map(String::trim).collect(Collectors.toList());
+            List<String> attrs = Arrays.stream(c.split("\\.")).map(String::trim).collect(Collectors.toList());
 
-            var synonym = queryPreprocessor.getDeclaredSynonym(attrs.get(0));
-            var attr = findAttrName(attrs.get(1));
+            Synonym<?> synonym = queryPreprocessor.getDeclaredSynonym(attrs.get(0));
+            AttrName attr = findAttrName(attrs.get(1));
 
             if (synonym == null)
                 throw new InvalidQueryException(String.format("Unrecognized synonym %s", attrs.get(0)), group);
@@ -76,18 +77,18 @@ public class ConditionExtractor extends Extractor {
         }
 
         if (refs.size() == 1) {
-            var value = conditionPart.get(1);
+            String value = conditionPart.get(1);
 
             if (value.contains("\""))
                 value = value.replaceAll("\"", "");
 
-            var pair = refs.get(0);
-            var attrRef = new AttrRef(pair.getFirst(), pair.getSecond());
-            var attrVal = new AttrValue(value);
+            Pair<Synonym<?>, AttrName> pair = refs.get(0);
+            AttrRef attrRef = new AttrRef(pair.getFirst(), pair.getSecond());
+            AttrValue attrVal = new AttrValue(value);
             conditionNodes.add(new ConditionRefValue(attrRef, attrVal));
         } else {
-            var ref1 = new AttrRef(refs.get(0).getFirst(), refs.get(0).getSecond());
-            var ref2 = new AttrRef(refs.get(1).getFirst(), refs.get(1).getSecond());
+            AttrRef ref1 = new AttrRef(refs.get(0).getFirst(), refs.get(0).getSecond());
+            AttrRef ref2 = new AttrRef(refs.get(1).getFirst(), refs.get(1).getSecond());
             conditionNodes.add(new ConditionRefRef(ref1, ref2));
         }
 
@@ -95,7 +96,7 @@ public class ConditionExtractor extends Extractor {
     }
 
     public static AttrName findAttrName(String name) {
-        for (var attr: AttrName.values()) {
+        for (AttrName attr: AttrName.values()) {
             if(name.equals(attr.getName()))
                 return attr;
         }

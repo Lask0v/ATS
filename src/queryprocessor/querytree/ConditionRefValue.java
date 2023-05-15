@@ -21,7 +21,7 @@ public class ConditionRefValue extends Condition
     @Override
     public boolean attrCompare(Object o)
     {
-        var value = attrValue.getValueType() == AttrValue.ValueType.NUMBER ? Integer.parseInt(attrValue.getValue()) : attrValue.getValue();
+        Object value = attrValue.getValueType() == AttrValue.ValueType.NUMBER ? Integer.parseInt(attrValue.getValue()) : attrValue.getValue();
         return attrRef.extractAttributeValue((ASTNode) o).equals(value);
     }
 

@@ -29,7 +29,7 @@ class QoS {
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        var sourceFile = Arrays.stream(args).findFirst().orElse(null);
+        String sourceFile = Arrays.stream(args).findFirst().orElse(null);
 
         if(sourceFile == null)
             throw new Exception("# No source file provided");
@@ -44,15 +44,15 @@ public class Main {
         if(QoS.verbose)
             System.out.println(pkb.getAST());
 
-        var qp = new QueryPreprocessorBase();
+        QueryPreprocessorBase qp = new QueryPreprocessorBase();
 
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("Ready");
 
         while(true) {
-            QueryTree qt = null;
-            var queryString = new String[2];
+            QueryTree qt;
+            String[] queryString = new String[2];
 
             queryString[0] = String.valueOf(scanner.nextLine()); // deklaracje
             queryString[1] = String.valueOf(scanner.nextLine()); // zapytanie
@@ -62,9 +62,9 @@ public class Main {
 
                 EvaluationEngine ee = new EvalEngine(pkb);
                 QueryEvaluator evaluator = new QueryEvaluatorBase(pkb, ee);
-                var evaluationResult = evaluator.evaluate(qt);
+                queryprocessor.evaluator.EvaluationResult evaluationResult = evaluator.evaluate(qt);
 
-                var qrp = new QueryResultProjector();
+                QueryResultProjector qrp = new QueryResultProjector();
                 qrp.setEvaluationResult(evaluationResult);
 
                 System.out.println(qrp.format());

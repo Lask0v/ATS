@@ -2,6 +2,7 @@ package queryprocessor.preprocessor;
 
 import java.util.*;
 import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -12,6 +13,7 @@ import queryprocessor.preprocessor.extractors.PatternExtractor;
 import queryprocessor.preprocessor.extractors.RelationshipExtractor;
 import queryprocessor.preprocessor.extractors.ResultSynonymExtractor;
 import queryprocessor.preprocessor.synonyms.*;
+import queryprocessor.preprocessor.validators.Validator;
 import queryprocessor.preprocessor.validators.ValidatorFactory;
 import queryprocessor.querytree.*;
 
@@ -49,7 +51,7 @@ public class QueryPreprocessorBase implements QueryPreprocessor
         if (query.length() == 0)
             throw new InvalidQueryException("Empty query");
 
-        var array = query.split(querySeparator); // positive look behind - query.split("((?<=;))");
+        String[] array = query.split(querySeparator); // positive look behind - query.split("((?<=;))");
 
         return parseQuery(array);
     }
@@ -61,13 +63,13 @@ public class QueryPreprocessorBase implements QueryPreprocessor
             throw new InvalidQueryException("The query not properly ended. "+querySeparator+" is missing", 1);
 
         ParsingProgress progress = null;
-        var tree = new QTree();
+        QTree tree = new QTree();
         declaredSynonyms.clear();
 
         boolean selectClauseExists = false;
         for (int i = 0; i < queryLines.length; i++)
         {
-            var line = queryLines[i];
+            String line = queryLines[i];
             if (line.length() == 0)
                 continue;
 
@@ -85,7 +87,7 @@ public class QueryPreprocessorBase implements QueryPreprocessor
             else
             {
                 progress = new ParsingProgress(line);
-                var matcher = Pattern.compile(Keyword.SELECT.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(line);
+                Matcher matcher = Pattern.compile(Keyword.SELECT.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(line);
                 var match = matcher.results().findFirst().get();
                 progress.setParsed(match.start(), match.end());
 
@@ -107,16 +109,16 @@ public class QueryPreprocessorBase implements QueryPreprocessor
                 // region SUCH THAT
                 if(containsClause(Keyword.SUCH_THAT, line, progress))
                 {
-                    var re = new RelationshipExtractor(this, progress);
-                    var relationships = re.extractRelationships(line);
+                    RelationshipExtractor re = new RelationshipExtractor(this, progress);
+                    List<RelationshipRef> relationships = re.extractRelationships(line);
 
                     tree.createSuchThatNode();
 
                     if(relationships.isEmpty())
                         throw new InvalidQueryException("Invalid 'such that' clause", i, line);
 
-                    for (var rel: relationships) {
-                        var validator = ValidatorFactory.createRelationshipValidator(rel);
+                    for (RelationshipRef rel: relationships) {
+                        Validator validator = ValidatorFactory.createRelationshipValidator(rel);
 
                         if(!validator.isValid())
                             throw new InvalidQueryException(validator.getErrorMsg(), i, rel.getLabel());
@@ -129,16 +131,16 @@ public class QueryPreprocessorBase implements QueryPreprocessor
                 //region WITH
                 if(containsClause(Keyword.WITH, line, progress))
                 {
-                    var ce = new ConditionExtractor(this, progress);
-                    var conditions = ce.extractConditions(line);
+                    ConditionExtractor ce = new ConditionExtractor(this, progress);
+                    List<Condition> conditions = ce.extractConditions(line);
 
                     tree.createWithNode();
 
                     if(conditions.isEmpty())
                         throw new InvalidQueryException("Invalid 'with' clause", i, line);
 
-                    for (var cond: conditions) {
-                        var validator = ValidatorFactory.createConditionValidator(cond);
+                    for (Condition cond: conditions) {
+                        Validator validator = ValidatorFactory.createConditionValidator(cond);
 
                         if(!validator.isValid())
                             throw new InvalidQueryException(validator.getErrorMsg(), i, line);
@@ -151,13 +153,13 @@ public class QueryPreprocessorBase implements QueryPreprocessor
                 // region PATTERN
                 if(containsClause(Keyword.PATTERN, line, progress))
                 {
-                    var pe = new PatternExtractor(this, progress);
-                    var patterns = pe.extractPatterns(line);
+                    PatternExtractor pe = new PatternExtractor(this, progress);
+                    List<ExpressionPattern> patterns = pe.extractPatterns(line);
 
                     tree.createPatterNode();
 
-                    for (var pattern: patterns) {
-                        var validator = ValidatorFactory.createPatternValidator(pattern);
+                    for (ExpressionPattern pattern: patterns) {
+                        Validator validator = ValidatorFactory.createPatternValidator(pattern);
                         if(!validator.isValid())
                             throw new InvalidQueryException(validator.getErrorMsg(), i, line);
 
@@ -185,7 +187,7 @@ public class QueryPreprocessorBase implements QueryPreprocessor
         int cnt = 0;
 
         for (Keyword keyword : synonymsKeywords) {
-            var matcher = Pattern.compile(Pattern.quote(keyword.getRegExpr()),
+            Matcher matcher = Pattern.compile(Pattern.quote(keyword.getRegExpr()),
                     Pattern.CASE_INSENSITIVE).matcher(line);
 
             if (matcher.find()) {
@@ -222,8 +224,8 @@ public class QueryPreprocessorBase implements QueryPreprocessor
     }
 
     private boolean containsClause(Keyword clause, String query, ParsingProgress parsingProgress) {
-        var matcher = Pattern.compile(clause.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(query);
-        var res = matcher.find();
+        Matcher matcher = Pattern.compile(clause.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(query);
+        boolean res = matcher.find();
         if(res && parsingProgress != null)
             parsingProgress.setParsed(matcher.toMatchResult().start(), matcher.toMatchResult().end());
 
@@ -232,7 +234,7 @@ public class QueryPreprocessorBase implements QueryPreprocessor
 
     @Override
     public Synonym<?> getDeclaredSynonym(String id) {
-        var f = this.declaredSynonyms.stream().filter(s -> s.getIdentifier().equals(id)).findFirst();
+        Optional<Synonym<?>> f = this.declaredSynonyms.stream().filter(s -> s.getIdentifier().equals(id)).findFirst();
 
         return f.orElse(null);
     }

@@ -4,6 +4,7 @@ import queryprocessor.preprocessor.Keyword;
 import queryprocessor.preprocessor.ParsingProgress;
 import queryprocessor.preprocessor.QueryPreprocessor;
 import queryprocessor.preprocessor.exceptions.InvalidQueryException;
+import queryprocessor.preprocessor.synonyms.Synonym;
 import queryprocessor.querytree.ResBooleanNode;
 import queryprocessor.querytree.ResNode;
 
@@ -11,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -25,14 +27,14 @@ public class ResultSynonymExtractor extends Extractor {
     }
 
     public List<ResNode> extractSynonyms(String query) throws InvalidQueryException {
-        var resultNodes = new ArrayList<ResNode>();
+        ArrayList<ResNode> resultNodes = new ArrayList<ResNode>();
 
-        var matcher = Pattern.compile(Keyword.SYNONYMS.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(query);
+        java.util.regex.Matcher matcher = Pattern.compile(Keyword.SYNONYMS.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(query);
 
         if (!matcher.find())
             return Collections.emptyList();
 
-        var group = matcher.group().trim();
+        String group = matcher.group().trim();
 
         parsingProgress.setParsed(matcher.toMatchResult().start(), matcher.toMatchResult().end());
 
@@ -41,13 +43,13 @@ public class ResultSynonymExtractor extends Extractor {
             if (!group.matches(Keyword.RESULT_TUPLE.getRegExpr()))
                 throw new InvalidQueryException("Invalid result tuple format. Expected e.g. <res1, res2, ...>", group);
 
-            var resTuple = group.replaceAll("[<>]", "");
+            String resTuple = group.replaceAll("[<>]", "");
             identifiers = Arrays.stream(resTuple.split(",")).map(String::trim).collect(Collectors.toList());
         } else {
-            if (group.isBlank())
+            if (group.isEmpty())
                 return Collections.emptyList();
 
-            var booleanMatcher = Pattern.compile(Keyword.BOOLEAN.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(group);
+            Matcher booleanMatcher = Pattern.compile(Keyword.BOOLEAN.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(group);
 
             if (booleanMatcher.find())
                 resultNodes.add(new ResBooleanNode());
@@ -55,8 +57,8 @@ public class ResultSynonymExtractor extends Extractor {
                 identifiers.add(group.trim());
         }
 
-        for (var id : identifiers) {
-            var synonym = queryPreprocessor.getDeclaredSynonym(id);
+        for (String id : identifiers) {
+            Synonym<?> synonym = queryPreprocessor.getDeclaredSynonym(id);
             if (synonym == null)
                 throw new InvalidQueryException(String.format("Undeclared synonym %s in the select clause", id), group);
 

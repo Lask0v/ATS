@@ -8,6 +8,7 @@ import queryprocessor.preprocessor.synonyms.Synonym;
 import utils.Pair;
 
 import java.util.*;
+import java.util.function.Function;
 
 public class QueryResultProjector
 {
@@ -23,21 +24,21 @@ public class QueryResultProjector
             return NoResultMsg;
         }
 
-        var builder = new StringBuilder();
-        var extractorMap = evaluationResult.getExtractors();
-        var synonyms = new ArrayList<>(extractorMap.keySet());
+        StringBuilder builder = new StringBuilder();
+        Map<Synonym<?>, java.util.function.Function<ASTNode, String>> extractorMap = evaluationResult.getExtractors();
+        ArrayList<Synonym<?>> synonyms = new ArrayList<>(extractorMap.keySet());
 
-        var partialResults = evaluationResult.getPartialResults();
-        var map  = new LinkedHashMap<Synonym<?>, PartialResult>();
+        List<PartialResult> partialResults = evaluationResult.getPartialResults();
+        LinkedHashMap<Synonym<?>, PartialResult> map  = new LinkedHashMap<Synonym<?>, PartialResult>();
 
-        var relationshipsForKey = new HashMap<Pair<Synonym<?>, Synonym<?>>, Set<Pair<ASTNode, ASTNode>>>();
+        HashMap<Pair<Synonym<?>, Synonym<?>>, Set<Pair<ASTNode, ASTNode>>> relationshipsForKey = new HashMap<Pair<Synonym<?>, Synonym<?>>, Set<Pair<ASTNode, ASTNode>>>();
 
-        for (var synonym: synonyms) {
-            for (var pr: partialResults) {
+        for (Synonym<?> synonym: synonyms) {
+            for (PartialResult pr: partialResults) {
                 if(pr.containsKey(synonym))
                     map.putIfAbsent(synonym, pr);
 
-                var pair = pr.getKeyPair();
+                Pair<Synonym<?>, Synonym<?>> pair = pr.getKeyPair();
                 if(pair != null) {
                     relationshipsForKey.putIfAbsent(pair, (Set<Pair<ASTNode, ASTNode>>) pr.getValue());
                 }
@@ -45,7 +46,7 @@ public class QueryResultProjector
         }
 
         if(synonyms.stream().anyMatch(s -> s.getKeyword().equals(Keyword.BOOLEAN))) {
-            var empty = partialResults.stream().anyMatch(pr -> pr.getValue().isEmpty()) || partialResults.isEmpty();
+            boolean empty = partialResults.stream().anyMatch(pr -> pr.getValue().isEmpty()) || partialResults.isEmpty();
             if(empty)
                 builder.append("false");
             else
@@ -57,8 +58,8 @@ public class QueryResultProjector
         List<List<ASTNode>> results = new ArrayList<>();
 
         List<List<ASTNode>> source = new ArrayList<>();
-        for (var entry: map.entrySet()) {
-            var values = new ArrayList<>(entry.getValue().getValue(entry.getKey()));
+        for (Map.Entry<Synonym<?>, PartialResult> entry: map.entrySet()) {
+            ArrayList<ASTNode> values = new ArrayList<>(entry.getValue().getValue(entry.getKey()));
             source.add(values);
         }
 
@@ -71,28 +72,28 @@ public class QueryResultProjector
 
         boolean relExists = false;
         for (int i = 0; i < synonyms.size(); i++) {
-            var synonym = synonyms.get(i);
+            Synonym<?> synonym = synonyms.get(i);
             if(relationshipsForKey.containsKey(synonym)) {
                 synonymsInRel[i] = true;
                 relExists = true;
             }
         }
 
-        var filtered2 = relExists ? new ArrayList<List<ASTNode>>() : results;
-        var resultValidity = new boolean[results.size()];
+        List<List<ASTNode>> filtered2 = relExists ? new ArrayList<>() : results;
+        boolean[] resultValidity = new boolean[results.size()];
 
         for (int i = 0; i < results.size(); i++)
         {
-            var result = results.get(i);
-            var valid = 0;
-            for (var entry : relationshipsForKey.entrySet()) {
-                var pair = entry.getKey();
+            List<ASTNode> result = results.get(i);
+            int valid = 0;
+            for (Map.Entry<Pair<Synonym<?>, Synonym<?>>, Set<Pair<ASTNode, ASTNode>>> entry : relationshipsForKey.entrySet()) {
+                Pair<Synonym<?>, Synonym<?>> pair = entry.getKey();
 
-                var synonym = pair.getFirst();
-                var synonymPos = synonyms.indexOf(synonym);
-                var value = entry.getValue();
-                var secondSynonym = pair.getSecond();
-                var secondSynonymPos = synonyms.indexOf(secondSynonym);
+                Synonym<?> synonym = pair.getFirst();
+                int synonymPos = synonyms.indexOf(synonym);
+                Set<Pair<ASTNode, ASTNode>> value = entry.getValue();
+                Synonym<?> secondSynonym = pair.getSecond();
+                int secondSynonymPos = synonyms.indexOf(secondSynonym);
 
                if(secondSynonymPos == -1 || synonymPos == -1) {
                     resultValidity[i] = true;
@@ -102,8 +103,8 @@ public class QueryResultProjector
                 //synonymsChecked[synonymPos] = true;
                 //synonymsChecked[secondSynonymPos] = true;
 
-                var node1 = result.get(synonymPos);
-                var node2 = result.get(secondSynonymPos);
+                ASTNode node1 = result.get(synonymPos);
+                ASTNode node2 = result.get(secondSynonymPos);
 
                 if (value.contains(new Pair<>(node1, node2)))
                     valid++;
@@ -117,8 +118,8 @@ public class QueryResultProjector
 
         //builder.append(String.format("%d result(s): \n", results.size()));
 
-        var extractors = new ArrayList<>(extractorMap.values());
-        var printed = 0;
+        ArrayList<Function<ASTNode, String>> extractors = new ArrayList<>(extractorMap.values());
+        int printed = 0;
         for(int p = 0; p < results.size(); p++)
         {
             if(!resultValidity[p])
@@ -127,13 +128,13 @@ public class QueryResultProjector
             if(printed > 0)
                 builder.append(", ");
 
-            var list = results.get(p);
+            List<ASTNode> list = results.get(p);
 
             for(int i = 0; i < list.size(); i++)
             {
                 assert (extractors.size() == list.size());
-                var extractor = extractors.get(i);
-                var node = list.get(i);
+                Function<ASTNode, String> extractor = extractors.get(i);
+                ASTNode node = list.get(i);
                 builder.append(extractor.apply(node));
 
                 if(i < list.size()-1)
@@ -152,16 +153,16 @@ public class QueryResultProjector
 
         if(step == 0) {
             for(int i = 0; i < source.get(step).size(); i++)
-                dest.add(List.of(source.get(step).get(i)));
+                dest.add(Collections.singletonList(source.get(step).get(i)));
 
             return recursiveSetCombination(dest, source, step+1);
         }
         else {
-            var newResult = new ArrayList<List<ASTNode>>();
+            ArrayList<List<ASTNode>> newResult = new ArrayList<>();
 
-            for (var res: dest) {
-                for (var s: source.get(step)) {
-                    var newList = new ArrayList<ASTNode>(res.size());
+            for (List<ASTNode> res: dest) {
+                for (ASTNode s: source.get(step)) {
+                    ArrayList<ASTNode> newList = new ArrayList<ASTNode>(res.size());
                     newList.addAll(res);
                     newList.add(s);
                     newResult.add(newList);

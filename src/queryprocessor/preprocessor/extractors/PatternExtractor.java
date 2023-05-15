@@ -13,6 +13,7 @@ import queryprocessor.querytree.ExpressionPattern;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -27,13 +28,13 @@ public class PatternExtractor extends Extractor {
     }
 
     public List<ExpressionPattern> extractPatterns(String query) throws InvalidQueryException {
-        var patterns = new ArrayList<ExpressionPattern>();
+        ArrayList<ExpressionPattern> patterns = new ArrayList<ExpressionPattern>();
 
-        var regions = extractRegions(query, Keyword.PATTERN);
+        List<utils.Pair<Integer, Integer>> regions = extractRegions(query, Keyword.PATTERN);
 
-        for (var region: regions)
+        for (utils.Pair<Integer, Integer> region: regions)
         {
-            var matcher = Pattern.compile(Keyword.PATTERN_COND.getRegExpr(), Pattern.CASE_INSENSITIVE)
+            Matcher matcher = Pattern.compile(Keyword.PATTERN_COND.getRegExpr(), Pattern.CASE_INSENSITIVE)
                     .matcher(query)
                     .region(region.getFirst(), region.getSecond());
             var results = matcher.results().collect(Collectors.toList());
@@ -53,7 +54,7 @@ public class PatternExtractor extends Extractor {
                 var rightHandExprStr = split[1].replaceAll(" ", "");
 
                 var synStr = group.substring(0, i1).trim();
-                var patternSynonym = queryPreprocessor.getDeclaredSynonym(synStr);
+                Synonym<?> patternSynonym = queryPreprocessor.getDeclaredSynonym(synStr);
 
                 if (patternSynonym == null)
                     throw new InvalidQueryException(String.format("Unrecognized synonym %s", synStr), group);
@@ -62,7 +63,7 @@ public class PatternExtractor extends Extractor {
                 if (leftHandExpStr.equals("_"))
                     leftHandExp = SynonymFactory.create(leftHandExpStr, Keyword.VARIABLE);
                 else {
-                    var matcher1 = Pattern.compile(Keyword.SYNONYM.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(leftHandExpStr);
+                    Matcher matcher1 = Pattern.compile(Keyword.SYNONYM.getRegExpr(), Pattern.CASE_INSENSITIVE).matcher(leftHandExpStr);
 
                     if(matcher1.find()) {
                         if (leftHandExpStr.contains("\""))
